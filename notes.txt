@@ -1,0 +1,29 @@
+XOR OUT
+11 0
+10 1
+01 1
+00 0
+
+becomes 110 101 011 000 can be represented 24 ways, 24 different training/testing sets
+4*3*2*1 = 24 half for training, half for testing, try have even targets.
+targets aren't included in testing, only included in training.
+  if trained correctly outputs should have 100% accuracy, and
+
+  XOR problem (bias node output is always 1)
+  2 in nodes (plus 1 bias?)
+  2 hidden nodes (plus 1 bias?) [calculation does not occur at bias node, output always 1]
+  1 out node
+
+  equation 7 calcs the input -> hidden layer nodes [x1w1 + x2w2 +x3w3]
+  step function hidden layer's output [> 0.5 = 1 // else 0]
+
+  equation 8 calcs the hidden -> output node, [summation then stepfunct for final out]
+    this is the finished feed forward.
+
+  equation 9 calculate error at the output node [desired out - actual out]
+    also used at the hidden layer nodes, as they dont have their own targets
+
+  equation 11 adjust weights at the output node(s)
+  equation 10 calculate the error at EACH hidden layer node
+  equation 12 adjust weights at each hidden layer node
+  
