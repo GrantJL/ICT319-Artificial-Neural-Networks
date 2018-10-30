@@ -1,63 +1,222 @@
-/**
- * @author Jayden Grant
- * @date 13-Sep-18
- */
-
 import java.util.Random;
 
 /**
  * Multi-Layer Perceptron with Back Propagation
  * With 2 input nodes, 1 hidden layer with 2 nodes and a single output node.
+ *
+ * @author Jayden Grant
+ * @date 13-Sep-18
  */
 public class MLP
 {
     private final int MAX_EPOCH = 100000;
 
     // Number of nodes (not including bias node)
-    private final int INPUT_NODES = 2;
-    private final int HIDDEN_NODES = 2;
-    private final int OUTPUT_NODES = 1;
+    private int INPUT_NODES = 2;
+    private int HIDDEN_NODES = 2;
+    private int OUTPUT_NODES = 1;
 
     private final float MIN_ERROR = 0.001f;
     private float learningRate = 0.15f;
 
     // Holds the nodes output value. +1 indicates a bias node
-    private float inputs[] = new float[INPUT_NODES + 1];
-    private float hidden[] = new float[HIDDEN_NODES + 1];
-    private float outputs[] = new float[OUTPUT_NODES];
+    private float inputs[];
+    private float hidden[];
+    private float outputs[];
+    // The current target output
+    private float target[];
 
     // Weights between the input and hidden nodes (+1 for the bias input node)
-    private float hWeights[][] = new float[INPUT_NODES + 1][HIDDEN_NODES];
+    private float hWeights[][];
     // Weights between the hidden and output nodes (+1 for the bias hidden node)
-    private float oWeights[][] = new float[HIDDEN_NODES + 1][OUTPUT_NODES];
+    private float oWeights[][];
 
     // Error (+1 as hidden layer has a bias node)
-    private float oError[] = new float[OUTPUT_NODES];
-    private float hError[] = new float[HIDDEN_NODES + 1];
+    private float oError[];
+    private float hError[];
 
     // RNG for initializing weights
     private Random random = new Random();
 
-    // The current target output
-    private float target;
-
-    // Objects used to load and store input data.
-    private PatternLoader trainingSet;
-    private PatternLoader trainingResults;
-    private String testSetPath;
-
-    public MLP()
+    /**
+     * Initialize a MLP with given number of nodes.
+     */
+    public MLP(int inputNodes, int hiddenNodes, int outputNodes)
     {
-        this("patterns/MLP/XORtrain.txt",
-                "patterns/MLP/result/XORtrain.txt",
-                "patterns/MLP/result/XORtest.txt");
+        INPUT_NODES = inputNodes;
+        HIDDEN_NODES = hiddenNodes;
+        OUTPUT_NODES = outputNodes;
+        
+        initMLP();
+    }
+    
+    // Initializes the MLPs internal data structure.
+    // Called after the MLP layers are set.
+    private void initMLP()
+    {
+        // Holds the nodes output value. +1 indicates a bias node
+        inputs = new float[INPUT_NODES + 1];
+        hidden = new float[HIDDEN_NODES + 1];
+        outputs = new float[OUTPUT_NODES];
+        
+        target = new float[OUTPUT_NODES];
+
+        hWeights = new float[INPUT_NODES + 1][HIDDEN_NODES];
+        oWeights = new float[HIDDEN_NODES + 1][OUTPUT_NODES];
+
+        hError = new float[HIDDEN_NODES + 1];
+        oError = new float[OUTPUT_NODES];
     }
 
-    public MLP(String trainingSet, String trainingTarget, String testSet)
+    public void learningRate(float learningRate)
     {
-        this.trainingSet = new PatternLoader(trainingSet);
-        this.trainingResults = new PatternLoader(trainingTarget);
-        this.testSetPath = testSet;
+        this.learningRate = learningRate;
+    }
+
+    public float learningRate()
+    {
+        return learningRate;
+    }
+
+
+    /**
+     * Test the MLP with the provided test data, the results are returned in an array where the results
+     * have not been run through an activation function.b
+     * @param testInputData array of input test data, each inner array is expected to have a size
+     *                      equal to the number of input nodes.
+     * @return An array or results, the number of arrays returned will be equal to the number of testInput data.
+     *         If the number or input nodes in a test is invalid, the array for that test will have a size of 0.
+     */
+    public float[][] test(float[][] testInputData)
+    {
+        if (testInputData.length > 0)
+        {
+            // An Array holding the results of the test.
+            float[][] results = new float[testInputData.length][OUTPUT_NODES];
+
+            // Test each set and its pairs
+            for (int t = 0; t < testInputData.length; t++)
+            {   // Temp array holding inputs
+                float[] testInputs = testInputData[t];
+
+                // Only perform test when there is the correct number of inputs
+                if (testInputs.length == INPUT_NODES)
+                {
+                    // Copy the test data into the input nodes
+                    for (int i = 0; i < INPUT_NODES; i++)
+                    {
+                        inputs[i] = testInputs[i];
+                    }
+
+                    // Run the input through the network
+                    calculateHiddenLayer();
+                    calculateOutputLayer();
+
+                    // add the results to the results
+                    for (int i = 0; i < outputs.length; i++)
+                    {
+                        results[t][i] = outputs[i];
+                    }
+
+                }
+                else
+                {
+                    // Returns a size 0 array if inputs aren't valid.
+                    results[t] = new float[0];
+                }
+            }
+
+            return results;
+        }
+        else
+        {
+            return new float[0][0];
+        }
+
+    }
+
+    // TODO: Document this method better :))
+    /**
+     * Trains the MLP with provided training data.
+     * Document this better :)
+     * @param trainingSets A vector of float arrays, each arrays size should match the number of input nodes.
+     * @param targetSet A vector of float arrays, each arrays size should match the number of output nodes.
+     */
+    public void train(float[][] trainingSets, float[][] targetSet)
+    {
+        System.out.println("Training MLP...");
+        // Set random weights (all node inc. bias)
+        initializeWeights();
+
+        boolean training = true;
+        int epoch = 0;
+
+        float overallErrr = 0;
+        float num = 0;
+        float sqError = 0.0f;
+        float avgErr = 0.0f;
+
+        // Until we reach our error target (or exceed training limit)
+        while(training)
+        {
+            sqError = 0.0f;
+            // open training data
+            // for each training patter
+            for (int set = 0; set < trainingSets.length; set++)
+            {
+                {// Load in the
+                    // Copy the training set into the input nodes
+                    for (int i = 0; i < INPUT_NODES; i++)
+                    {
+                        inputs[i] = trainingSets[set][i];
+                    }
+                    // Copy the training set into the input nodes
+                    for (int i = 0; i < OUTPUT_NODES; i++)
+                    {
+                        target[i] = targetSet[set][i];
+                    }
+                    inputs[INPUT_NODES] = 1.0f;
+                    hidden[HIDDEN_NODES] = 1.0f;
+                }
+                //resetStuff();
+                // reset net, actual out, error vector to 0
+                // calc net, actual output HIDDEN
+                calculateHiddenLayer();
+                // calc net, actual output OUTPUT LAYER
+                calculateOutputLayer();
+
+                // Calc/Sum error
+                // TODO: Recalculate for multiple outputs!!
+                for (int o = 0; o < OUTPUT_NODES; o++)
+                {
+                    sqError += Math.pow((outputs[o] - target[o]), 2.0);
+                }
+
+                calculateOutputError();
+                calculateHiddenError();
+
+                // update outer weights
+                updateOutputWeights();
+                // update hidden weights
+                updateHiddenWeights();
+            }
+
+            epoch++;
+
+            // Using sum of squared errors over a set (4 pairs) for error
+            if((sqError < MIN_ERROR && epoch >= 1000) || epoch > MAX_EPOCH) // && avgErr < MIN_ERROR);
+                training = false;
+        }
+
+        // Print training info
+        if (epoch <= MAX_EPOCH)
+            System.out.println("MLP finished training in " + epoch + " epochs. (Avg. error: " + avgErr + ")");
+        else
+        {
+            System.out.println("MLP didn't not finish training within " + MAX_EPOCH + " epochs.");
+            System.out.println("Epochs: " + epoch + " Avg. Error: " + avgErr);
+            System.out.println("Last sets sum of squared errors: " + sqError);
+        }
     }
 
     /**
@@ -66,7 +225,7 @@ public class MLP
      * Range: -2.4/(num input nodes)  to  2.4/(num input nodes)
      */
     private void initializeWeights()
-    {
+     {
         float range = (2.4f/INPUT_NODES);
         for (int i = 0; i < INPUT_NODES + 1; i++)
         {
@@ -87,152 +246,11 @@ public class MLP
     }
 
     /**
-     * Test the MLP with given file, uses default test data if <code>testSetFile</code> is null.
-     * @param testSetFile the file containing test data.
-     */
-    public void test(String testSetFile)
-    {
-        // Use default test set (loaded at construction)
-        if (testSetFile == null)
-            testSetFile = testSetPath;
-
-        // Used to calc accuracy to the XOR problem
-        int count = 0;
-        int corr = 0;
-
-        // Load testing data
-        PatternLoader testingSet = new PatternLoader(testSetFile);
-
-        // Heading
-        System.out.println("XOR Tests");
-        System.out.printf("\nInputs  Output (Error/Difference)");
-
-        // Test each set and its pairs
-        for (int set = 0; set < testingSet.getNumPatterns(); set++)
-        {
-            for (int pair = 0; pair < testingSet.getPatternSize() / 2; pair++)
-            {
-                {// Set the input to the MLP
-                    inputs[2] = 1.0f; //bias
-
-                    // Load pair into 2nd and 3rd input node
-                    inputs[0] = testingSet.getPattern(set).elementAt(pair * 2);
-                    inputs[1] = testingSet.getPattern(set).elementAt(pair * 2 + 1);
-                }
-
-                // Run the input through the netwrok
-                calculateHiddenLayer();
-                calculateOutputLayer();
-
-                // Run the result through a step function:
-                int result;
-                if (outputs[0] < 0.5)
-                    result = 0;
-                else
-                    result = 1;
-
-                // Display the output (as if XOR problem)
-                boolean a = (inputs[0] < 0.5)? false : true;
-                boolean b = (inputs[1] < 0.5)? false : true;
-                int actual = (a ^ b)? 1 : 0;
-
-                // Increment accuracy data
-                count++;
-                if (actual == result)
-                    corr++;
-
-                // Print each pairs out
-                System.out.printf("\n%d ^ %d = %d (%3.2f)", (int)inputs[0], (int)inputs[1], result, (double)(outputs[0] - (float)actual));
-            }
-        }
-        // Print the accuracy (assuming the MLP is trained for the XOR problem
-        System.out.printf("\nXOR Success Rate: %d/%d (%4.1f%%)\n", corr, count, 100*(corr/(float)count));
-    }
-
-    /**
-     * Train the MLP
-     */
-    public void train()
-    {
-        System.out.println("Training MLP...");
-        // Set random weights (all node inc. bias)
-        initializeWeights();
-
-        boolean training = true;
-        int epoch = 0;
-
-        float overallErrr = 0;
-        float num = 0;
-        float sqError = 0.0f;
-        float avgErr = 0.0f;
-
-        int noPats = trainingSet.getNumPatterns();
-        int patSize = trainingSet.getPatternSize();
-
-        // Until we reach our error target (or exceed training limit)
-        while(training)
-        {
-            sqError = 0.0f;
-            // open training data
-            // for each training patter
-            for (int set = 0; set < noPats; set++)
-            {
-                for (int pair = 0; pair < patSize; pair+=2)
-                {//for each training pair
-                    // read input + bias into input vec
-                    // read targeta into target vector
-                    loadPairData(set, pair);
-
-                    //resetStuff();
-                    // reset net, actual out, error vector to 0
-                    // calc net, actual output HIDDEN
-                    calculateHiddenLayer();
-                    // calc net, actual output OUTPUT LAYER
-                    calculateOutputLayer();
-
-                    // Calc/Sum error
-                    sqError += Math.pow((outputs[0] - target), 2.0);
-                    overallErrr += Math.abs(outputs[0] - target);
-                    num++;
-
-                    calculateOutputError();
-                    calculateHiddenError();
-
-                    // update outer weights
-                    updateOutputWeights();
-                    // update hidden weights
-                    updateHiddenWeights();
-                }
-            }
-            avgErr = overallErrr / num;
-
-            epoch++;
-            //System.out.printf("%d: %f | %f\n", epoch, avgErr, sqError / pairCount);//, overallErrr, num);
-
-            // Using sum of squared errors over a set (4 pairs) for error
-            if(((sqError / patSize) < MIN_ERROR && epoch >= 1000) || epoch > MAX_EPOCH) // && avgErr < MIN_ERROR);
-                training = false;
-        }
-
-        // Print training info
-        if (epoch <= MAX_EPOCH)
-            System.out.println("MLP finished training in " + epoch + " epochs. (Avg. error: " + avgErr + ")");
-        else
-        {
-            System.out.println("MLP didn't not finish training within " + MAX_EPOCH + " epochs.");
-            System.out.println("Epochs: " + epoch + " Avg. Error: " + avgErr);
-            System.out.println("Last sets sum of squared errors: " + (sqError / patSize));
-        }
-    }
-
-    /**
      * Calculate the actual output at each hidden layer node
      */
     private void calculateHiddenLayer()
-    { // Hidden layers are in index 0 and 1
-
-        hidden[HIDDEN_NODES] = 1.0f; //bias
-
+    {
+        // Hidden layers are in index 0 and 1
         // Eq 7 Update each node (hidden)
         for(int j = 0; j < HIDDEN_NODES; j++)
         {
@@ -295,7 +313,7 @@ public class MLP
              */
 
             // We know there is only 1 output, so target is not an array
-            oError[k] = outputs[k] * (1 - outputs[k]) * (target - outputs[k]);
+            oError[k] = outputs[k] * (1 - outputs[k]) * (target[k] - outputs[k]);
         }
     }
 
@@ -361,22 +379,6 @@ public class MLP
                 hWeights[i][j] += learningRate * inputs[i] * hError[j];
             }
         }
-    }
-
-    /**
-     * Load the pair at specified index from the specified training set
-     * @param setIndex
-     * @param pairIndex
-     */
-    private void loadPairData(int setIndex, int pairIndex)
-    {
-        inputs[0] = trainingSet.getPattern(setIndex).elementAt(pairIndex);
-        inputs[1] = trainingSet.getPattern(setIndex).elementAt(pairIndex + 1);
-
-        inputs[2] = 1.0f; //bias
-
-        // Load the pairs target
-        target = trainingResults.getPattern(setIndex).elementAt(pairIndex/2);
     }
 
     /**
