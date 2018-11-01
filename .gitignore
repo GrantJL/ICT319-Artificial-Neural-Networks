@@ -24,3 +24,11 @@ hs_err_pid*
 *.xml
 *.xml
 .idea/misc.xml
+
+# Internal Documentation
+*.gdoc
+
+
+# Directories
+patterns/MLP/characters/train/
+patterns/MLP/characters/test/
