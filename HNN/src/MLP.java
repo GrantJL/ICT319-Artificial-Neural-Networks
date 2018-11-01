@@ -16,7 +16,7 @@ public class MLP
     private int HIDDEN_NODES = 2;
     private int OUTPUT_NODES = 1;
 
-    private final float MIN_ERROR = 0.001f;
+    private float minError = 0.001f;
     private float learningRate = 0.15f;
 
     // Holds the nodes output value. +1 indicates a bias node
@@ -68,26 +68,43 @@ public class MLP
         oError = new float[OUTPUT_NODES];
     }
 
-    public void learningRate(float learningRate)
+    public void setLearningRate(float learningRate)
     {
         this.learningRate = learningRate;
     }
-
-    public float learningRate()
+    public float getLearningRate()
     {
         return learningRate;
     }
-
+    public void setMinError(float minError) { this.minError = minError; }
+    public float getMinError() { return minError; }
 
     /**
+     * Run the provided inputs through the trained mlp and return the results.
+     *
      * Test the MLP with the provided test data, the results are returned in an array where the results
-     * have not been run through an activation function.b
+     * have been run through an step activation function, with a threshold of 0.5f.
      * @param testInputData array of input test data, each inner array is expected to have a size
      *                      equal to the number of input nodes.
      * @return An array or results, the number of arrays returned will be equal to the number of testInput data.
      *         If the number or input nodes in a test is invalid, the array for that test will have a size of 0.
      */
     public float[][] test(float[][] testInputData)
+    {
+        return test(testInputData, true);
+    }
+
+    /**
+     * Run the provided inputs through the trained mlp and return the results.
+     *
+     * Test the MLP with the provided test data returning the results.
+     * @param testInputData array of input test data, each inner array is expected to have a size
+     *                      equal to the number of input nodes.
+     * @param useStepFunc whether to run the output results through a step function.
+     * @return An array or results, the number of arrays returned will be equal to the number of testInput data.
+     *         If the number or input nodes in a test is invalid, the array for that test will have a size of 0.
+     */
+    public float[][] test(float[][] testInputData, boolean useStepFunc)
     {
         if (testInputData.length > 0)
         {
@@ -112,10 +129,22 @@ public class MLP
                     calculateHiddenLayer();
                     calculateOutputLayer();
 
-                    // add the results to the results
-                    for (int i = 0; i < outputs.length; i++)
+                    // run the results through the step function?
+                    if (useStepFunc)
                     {
-                        results[t][i] = outputs[i];
+                        // add the results to the results
+                        for (int i = 0; i < outputs.length; i++)
+                        {
+                            results[t][i] = stepFunction(outputs[i]);
+                        }
+                    }
+                    else
+                    {
+                        // add the results to the results
+                        for (int i = 0; i < outputs.length; i++)
+                        {
+                            results[t][i] = outputs[i];
+                        }
                     }
 
                 }
@@ -132,13 +161,12 @@ public class MLP
         {
             return new float[0][0];
         }
-
     }
 
     // TODO: Document this method better :))
     /**
      * Trains the MLP with provided training data.
-     * Document this better :)
+     *
      * @param trainingSets A vector of float arrays, each arrays size should match the number of input nodes.
      * @param targetSet A vector of float arrays, each arrays size should match the number of output nodes.
      */
@@ -204,7 +232,7 @@ public class MLP
             epoch++;
 
             // Using sum of squared errors over a set (4 pairs) for error
-            if((sqError < MIN_ERROR && epoch >= 1000) || epoch > MAX_EPOCH) // && avgErr < MIN_ERROR);
+            if((sqError < minError && epoch >= 1000) || epoch > MAX_EPOCH) // && avgErr < minError);
                 training = false;
         }
 
@@ -388,6 +416,31 @@ public class MLP
     {
         return 1 / (1 + (float)Math.exp(-value));
     }
+
+    /**
+     * Returns 0.0f if the value is less than 0.5, 1.0f otherwise.
+     *
+     * Applies the value to a basic step function with a threshold of 0.5.
+     *
+     * @param value the value to pass through the step function.
+     * @return the value after it has been processed by the step function.
+     */
+    private float stepFunction(float value)
+    {
+        return stepFunction(value, 0.5f);
+    }
+
+    /**
+     * Returns 0.0f if the value is less than the <code>threshold</code>, 1.0f otherwise.
+     *
+     * Applies the value to a basic step function with a threshold of 0.5.
+     *
+     * @param value the value to pass through the step function.
+     * @param threshold the threshold used by the step function.
+     * @return the value after it has been processed by the step function.
+     */
+    private float stepFunction(float value, float threshold)
+    {
+        return (value < threshold ? 0.0f : 1.0f);
+    }
 }
-
-

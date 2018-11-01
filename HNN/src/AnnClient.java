@@ -17,38 +17,86 @@ public class AnnClient
 
     public static void main(String[] args) throws InterruptedException
     {
-        MLP tets = new MLP(2, 2, 1);
+        MLP mlp = new MLP(45, 15, 5);
 
-        float[][] testIn = load("patterns/MLP/XORtrain.txt", 48, 2);
-        float[][] testTarget = load("patterns/MLP/result/XORtrain.txt", 48, 1);
-        float[][] testTest = load("patterns/MLP/XORtest.txt", 48, 2);
-        float[][] testTestTarget = load("patterns/MLP/result/XORtest.txt", 48, 2);
+        long loadTime = System.currentTimeMillis();
+        float[][] train =       load("patterns/MLP/characters/trainAlpha.txt", 46, 45);
+        float[][] trainTarget = load("patterns/MLP/characters/trainAlphaTargets.txt", 46, 5);
+        float[][] test =        load("patterns/MLP/characters/testAlpha.txt", 130, 45);
+        float[][] testTarget =  load("patterns/MLP/characters/testAlphaTargets.txt", 130, 5);
+        loadTime = System.currentTimeMillis() - loadTime;
 
-        tets.train(testIn, testTarget);
-        float[][] results = tets.test(testTest);
+        // train the mlp
+        long trainTime = System.currentTimeMillis();
+        mlp.train(train, trainTarget);
+        trainTime = System.currentTimeMillis() - trainTime;
 
-        boolean success = true;
+        // test the mlp
+        float[][] results = mlp.test(test);
+
+        // check the results of the test
+        int errors = 0;
+        System.out.println("       T R");
         for(int i = 0; i < results.length; i++)
         {
-            if ( Math.abs(testTestTarget[i][0] - results[i][0]) > 0.01 )
+            char target = decodeVowel(testTarget[i]);
+            char result = decodeVowel(results[i]);
+            if ( target != result )
             {
-                success = false;
-                break;
+                errors++;
+                System.out.println("error: " + target + " " + result);
             }
-            System.out.println(testTestTarget[i][0] - results[i][0]);
         }
 
-        if (success)
+        if (errors == 0)
         {
-            System.out.println("Test was successful!");
+            System.out.println("All tests successful!");
         }
         else
         {
-            System.out.println("Test FAILED!");
+            System.out.println(errors + " out of " + results.length + " tests failed");
         }
+
+        System.out.println();
+        System.out.println("Load time: " + loadTime + "ms");
+        System.out.println("Train time: " + trainTime + "ms");
+        System.out.println();
 
         printStudentDetails();
         Thread.sleep(300);
+    }
+
+    private static char decodeVowel(float[] vowelRep)
+    {
+        if (vowelRep.length == 5)
+        {
+            if (vowelRep[0] == 1.0f)
+                return 'A';
+            else if (vowelRep[1] == 1.0f)
+                return 'E';
+            else if (vowelRep[2] == 1.0f)
+                return 'I';
+            else if (vowelRep[3] == 1.0f)
+                return 'O';
+            else if (vowelRep[4] == 1.0f)
+                return 'U';
+            else
+                return 'C';
+        }
+        else
+        {
+            return '.';
+        }
+    }
+
+    /**
+     * Provide formatted output of the test inputs which did not match their target.
+     */
+    private static void createErrorReport()
+    {/*Maybe pass in array of inputs and their targets (maybe not, should be able to distinguish the inputs*/
+        // Format input (9x5)
+        // Provide target (A E I O U C)
+        // save to a file  (save dialog?)
     }
 
     /**
@@ -99,18 +147,6 @@ public class AnnClient
         }
 
         return data;
-    }
-
-    private static void demoMLP()
-    {
-        //System.out.println("Testing MLP");
-        //mlp.test(null);
-    }
-
-    private static void testMLP()
-    {
-        //System.out.println("Testing MLP");
-        //mlp.test("patterns/MLP/8bitPermsR.txt");
     }
 
     private static void printStudentDetails()
