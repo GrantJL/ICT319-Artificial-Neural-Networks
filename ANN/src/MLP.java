@@ -179,72 +179,63 @@ public class MLP
         boolean training = true;
         int epoch = 0;
 
-        float overallErrr = 0;
-        float num = 0;
-        float sqError = 0.0f;
-        float avgErr = 0.0f;
+        float sqError;
 
         // Until we reach our error target (or exceed training limit)
         while(training)
         {
+            // Reset sum of squared errors for next epoch
             sqError = 0.0f;
-            // open training data
-            // for each training patter
+
+            // Train the MLP with each data set
             for (int set = 0; set < trainingSets.length; set++)
             {
-                {// Load in the
-                    // Copy the training set into the input nodes
+                {   // Copy the data set into the input nodes
                     for (int i = 0; i < INPUT_NODES; i++)
                     {
                         inputs[i] = trainingSets[set][i];
                     }
-                    // Copy the training set into the input nodes
+                    // Copy the targets into the target array
                     for (int i = 0; i < OUTPUT_NODES; i++)
                     {
                         target[i] = targetSet[set][i];
                     }
+                    // Reset the bias (they shouldn't change anyway)
                     inputs[INPUT_NODES] = 1.0f;
                     hidden[HIDDEN_NODES] = 1.0f;
                 }
-                //resetStuff();
-                // reset net, actual out, error vector to 0
-                // calc net, actual output HIDDEN
+
+                // Calculate the hidden and output layer from the input
                 calculateHiddenLayer();
-                // calc net, actual output OUTPUT LAYER
                 calculateOutputLayer();
 
-                // Calc/Sum error
-                // TODO: Recalculate for multiple outputs!!
+                // Calculate the sum of squared errors
                 for (int o = 0; o < OUTPUT_NODES; o++)
                 {
                     sqError += Math.pow((outputs[o] - target[o]), 2.0);
                 }
 
+                // Calculate the error
                 calculateOutputError();
                 calculateHiddenError();
 
-                // update outer weights
+                // Update the weights based on error
                 updateOutputWeights();
-                // update hidden weights
                 updateHiddenWeights();
             }
 
             epoch++;
 
-            // Using sum of squared errors over a set (4 pairs) for error
-            if((sqError < minError && epoch >= 1000) || epoch > MAX_EPOCH) // && avgErr < minError);
+            // Determine whether we have met our target error
+            if((sqError < minError && epoch >= 1000) || epoch > MAX_EPOCH)
                 training = false;
         }
 
         // Print training info
         if (epoch <= MAX_EPOCH)
-            System.out.println("MLP finished training in " + epoch + " epochs. (Avg. error: " + avgErr + ")");
+            System.out.println("MLP finished training in " + epoch + " epochs.");
         else
-        {
             System.out.println("MLP didn't not finish training within " + MAX_EPOCH + " epochs.");
-            System.out.println("Epochs: " + epoch + " Avg. Error: " + avgErr);
-            System.out.println("Last sets sum of squared errors: " + sqError);
-        }
     }
 
     /**
