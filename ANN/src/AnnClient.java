@@ -96,8 +96,13 @@ public class AnnClient
 
     /**
      * Provide formatted output of the test inputs which did not match their target.
+     *
+     * @param indices A list of indices which failed the test.
+     * @param data The original data passed into the MLP for testing.
+     * @param results The results produced by the MLP.
+     * @param targets The expected results.
      */
-    private static void createErrorReport(ArrayList<Integer> indices, float[][] outputs, float[][] targets, float[][] results)
+    private static void createErrorReport(ArrayList<Integer> indices, float[][] data, float[][] targets, float[][] results)
     {
         JFileChooser fileDialog = new JFileChooser(System.getProperty("user.dir"));
         fileDialog.setDialogTitle("Save Error Report");
@@ -112,14 +117,14 @@ public class AnnClient
             try
             {
                 out = new BufferedWriter(new FileWriter(file));
-                out.write("Errors: " + indices.size() + " out of " + outputs.length
-                        + " (" + Math.round(indices.size() * 100 / (float)outputs.length) + "%)"
+                out.write("Errors: " + indices.size() + " out of " + data.length
+                        + " (" + Math.round(indices.size() * 100 / (float)data.length) + "%)"
                         + System.lineSeparator());
 
                 for (Integer index : indices)
                 {
                     String line = "";
-                    float[] output = outputs[index];
+                    float[] input = data[index];
                     char target = decodeVowel(targets[index]);
                     char result = decodeVowel(results[index]);
 
@@ -129,7 +134,7 @@ public class AnnClient
                     {
                         for (int c = 0; c < 9; c++)
                         {
-                            line += (output[c+(r*9)] < 0.5f ? "0 " : "1 ");
+                            line += (input[c+(r*9)] < 0.5f ? "0 " : "1 ");
                         }
                         line += System.lineSeparator();
                     }

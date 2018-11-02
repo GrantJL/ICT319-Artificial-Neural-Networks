@@ -40,6 +40,9 @@ public class MLP
 
     /**
      * Initialize a MLP with given number of nodes.
+     * @param inputNodes the number of input nodes.
+     * @param hiddenNodes the number of hidden nodes.
+     * @param outputNodes the number of output nodes.
      */
     public MLP(int inputNodes, int hiddenNodes, int outputNodes)
     {
@@ -402,6 +405,8 @@ public class MLP
 
     /**
      * Sigmoid activation function
+     * @param value the value to pass through the activation function.
+     * @return the value after being passed through the activation function.
      */
     private float activationFunction(float value)
     {
